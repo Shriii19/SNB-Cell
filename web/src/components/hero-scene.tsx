@@ -1,149 +1,170 @@
 "use client";
 
-import type { CSSProperties, PointerEvent } from "react";
-import { useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Environment, Float, PerspectiveCamera, ContactShadows } from "@react-three/drei";
+import { useRef, useMemo } from "react";
+import * as THREE from "three";
 
-const signalBadges = ["Voice AI", "Warm handoff", "Orbit-ready UI"];
+// Dynamic camera rig that creates a deep parallax effect moving with the mouse
+function CameraRig() {
+  useFrame((state) => {
+    // Aggressively move the camera based on pointer position for a 3D feel
+    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, state.pointer.x * 2.5, 0.05);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, state.pointer.y * 2.5, 0.05);
+    state.camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
 
-export function HeroScene() {
-  const [pointer, setPointer] = useState({ x: 0, y: 0 });
+// A clean, tech-focused geometric lattice - very precise and architectural
+function DataLattice() {
+  const groupRef = useRef<THREE.Group>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
+  
+  // Create an array of geometric nodes
+  const nodes = useMemo(() => {
+    const list = [];
+    for (let i = 0; i < 24; i++) {
+      const radius = 2.5 + Math.random() * 1.5;
+      const angle = (i / 24) * Math.PI * 2;
+      const h = (Math.random() - 0.5) * 4;
+      list.push({
+        position: [Math.cos(angle) * radius, h, Math.sin(angle) * radius] as [number, number, number],
+        scale: 0.2 + Math.random() * 0.4,
+        speed: 0.2 + Math.random() * 0.5
+      });
+    }
+    return list;
+  }, []);
 
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const nextX = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const nextY = (event.clientY - bounds.top) / bounds.height - 0.5;
-
-    setPointer({ x: nextX, y: nextY });
-  };
-
-  const resetPointer = () => setPointer({ x: 0, y: 0 });
-
-  const layerStyle = (
-    xStrength: number,
-    yStrength = xStrength,
-  ): CSSProperties => ({
-    transform: `translate3d(${pointer.x * xStrength}px, ${pointer.y * yStrength}px, 0)`,
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    
+    if (coreRef.current) {
+      coreRef.current.rotation.x = t * 0.2;
+      coreRef.current.rotation.y = t * 0.3;
+    }
+    
+    // Aggressive, beautiful rotation and tracking with the mouse
+    if (groupRef.current) {
+      const mouseX = state.pointer.x;
+      const mouseY = state.pointer.y;
+      
+      // Base continuous rotation
+      const baseRotationY = t * 0.1;
+      
+      // Target rotations mapping strongly to mouse movement
+      const targetRotX = -mouseY * (Math.PI / 3);
+      const targetRotY = baseRotationY + mouseX * (Math.PI / 2);
+      const targetRotZ = -mouseX * (Math.PI / 4);
+      
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotX, 0.05);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotY, 0.05);
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, targetRotZ, 0.05);
+      
+      // Target positions for secondary parallax layer
+      groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, mouseX * 0.5, 0.05);
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, mouseY * 0.5, 0.05);
+    }
   });
 
   return (
-    <div className="relative mx-auto w-full max-w-[580px]">
-      <div className="absolute -inset-6 rounded-[2.75rem] bg-[radial-gradient(circle_at_center,rgba(124,232,255,0.2),transparent_58%)] blur-3xl" />
+    <group ref={groupRef}>
+      {/* Central Icosahedron core */}
+      <Float speed={1.5} floatIntensity={0.5} rotationIntensity={0.5}>
+        <mesh ref={coreRef}>
+          <icosahedronGeometry args={[1.5, 0]} />
+          <meshPhysicalMaterial 
+            color="#0f172a"
+            emissive="#1e293b"
+            emissiveIntensity={0.2}
+            roughness={0.1}
+            metalness={0.8}
+            clearcoat={1}
+            clearcoatRoughness={0.1}
+            wireframe={true}
+            transparent
+            opacity={0.8}
+          />
+        </mesh>
+        
+        {/* Solid inner core */}
+        <mesh>
+          <octahedronGeometry args={[0.8, 0]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.8} />
+        </mesh>
+      </Float>
 
-      <div
-        className="orbital-card relative isolate aspect-[11/12] overflow-hidden rounded-[2.75rem] border border-white/10 bg-[linear-gradient(160deg,rgba(8,17,30,0.98),rgba(8,17,30,0.94)_40%,rgba(17,37,67,0.96))] p-5 shadow-[0_45px_120px_rgba(5,10,20,0.42)] sm:p-7"
-        onPointerMove={handlePointerMove}
-        onPointerLeave={resetPointer}
-        role="img"
-        aria-label="Interactive illustration of a floating call-assistant mascot in space"
-      >
-        <div className="starfield absolute inset-0 opacity-65" />
-        <div
-          className="pointer-events-none absolute -right-16 top-8 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(124,232,255,0.34),transparent_62%)] blur-3xl"
-          style={layerStyle(-22)}
-        />
-        <div
-          className="pointer-events-none absolute -left-14 bottom-6 h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(243,181,111,0.18),transparent_64%)] blur-3xl"
-          style={layerStyle(-18)}
-        />
-
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-start justify-between gap-4">
-            <div className="glass-panel rounded-full border border-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/72">
-              Interactive mascot
-            </div>
-            <div className="glass-panel rounded-full border border-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/60">
-              Cursor reactive
-            </div>
-          </div>
-
-          <div className="relative flex flex-1 items-center justify-center pb-10 pt-6">
-            <div
-              className="absolute left-1/2 top-1/2 h-[74%] w-[74%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-[radial-gradient(circle,rgba(19,43,78,0.85),rgba(8,17,30,0)_68%)]"
-              style={layerStyle(-12)}
+      {/* Orbiting data nodes */}
+      {nodes.map((node, i) => (
+        <Float key={i} speed={node.speed} floatIntensity={2} rotationIntensity={1}>
+          <mesh position={node.position} scale={node.scale}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshPhysicalMaterial 
+              color="#2563eb"
+              emissive="#1d4ed8"
+              emissiveIntensity={0.4}
+              transparent
+              opacity={0.8}
+              roughness={0}
+              metalness={0.5}
             />
-            <div
-              className="animate-pulse-soft absolute left-[14%] top-[18%] h-4 w-4 rounded-full bg-[color:var(--color-aqua)] shadow-[0_0_0_10px_rgba(124,232,255,0.12)]"
-              style={layerStyle(-8)}
-            />
-            <div
-              className="animate-twinkle absolute right-[18%] top-[24%] h-3 w-3 rounded-full bg-white shadow-[0_0_0_8px_rgba(255,255,255,0.08)]"
-              style={layerStyle(-10)}
-            />
-            <div
-              className="animate-float-delayed absolute left-[12%] bottom-[24%] h-18 w-18 rounded-[1.8rem] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] shadow-[0_18px_35px_rgba(0,0,0,0.2)] backdrop-blur-md"
-              style={layerStyle(-16)}
-            >
-              <div className="absolute inset-3 rounded-[1.2rem] border border-white/10 bg-[radial-gradient(circle,rgba(124,232,255,0.22),transparent_68%)]" />
-            </div>
+          </mesh>
+        </Float>
+      ))}
 
-            <div
-              className="absolute right-[6%] top-[26%] flex items-center gap-3 rounded-full border border-white/10 bg-[rgba(8,17,30,0.56)] px-4 py-3 text-sm font-medium text-white/74 backdrop-blur-xl"
-              style={layerStyle(-14)}
-            >
-              <span className="h-2.5 w-2.5 rounded-full bg-[color:var(--color-aqua)] shadow-[0_0_0_8px_rgba(124,232,255,0.14)]" />
-              Live greeting ready
-            </div>
+      {/* Connecting rings representing network topology */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[3, 0.01, 16, 100]} />
+        <meshBasicMaterial color="#94a3b8" transparent opacity={0.6} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]} scale={1.5}>
+        <torusGeometry args={[3, 0.01, 16, 100]} />
+        <meshBasicMaterial color="#64748b" transparent opacity={0.3} />
+      </mesh>
+    </group>
+  );
+}
 
-            <div className="relative h-[66%] w-[72%] max-w-[360px]" style={layerStyle(20, 16)}>
-              <div className="animate-float-gentle absolute inset-x-[14%] top-[12%] h-[30%] rounded-full bg-[radial-gradient(circle,rgba(124,232,255,0.18),transparent_68%)] blur-2xl" />
-              <div className="absolute left-[20%] top-[18%] h-[34%] w-[34%] rounded-full border border-white/10 bg-[linear-gradient(145deg,rgba(18,41,74,0.96),rgba(8,17,30,0.88))] shadow-[0_24px_60px_rgba(4,12,22,0.5)]" />
-              <div className="absolute right-[14%] top-[16%] h-[16%] w-[16%] rounded-full border border-[rgba(124,232,255,0.5)] opacity-80" />
-              <div className="absolute right-[9%] top-[11%] h-[26%] w-[26%] rounded-full border border-[rgba(124,232,255,0.22)]" />
+export function HeroScene() {
+  return (
+    <div className="relative mx-auto w-full aspect-square max-w-[600px] lg:scale-110">
+      {/* Container is completely transparent, integrating seamlessly into the page */}
+      <div className="absolute inset-0 z-0">
+        <Canvas>
+          {/* Switched to PerspectiveCamera for real depth feeling */}
+          <PerspectiveCamera makeDefault position={[0, 0, 10]} fov={35} />
+          <CameraRig />
+          
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[10, 20, 10]} intensity={3} color="#ffffff" castShadow />
+          <directionalLight position={[-10, -20, -10]} intensity={1.5} color="#3b82f6" />
+          
+          {/* Slightly scaling down to fit nicely without cutting out */}
+          <group scale={0.7} position={[0, 0, 0]}>
+            <DataLattice />
+          </group>
+          
+          <Environment preset="city" />
+          {/* Updated shadow for light background */}
+          <ContactShadows position={[0, -3, 0]} opacity={0.3} scale={20} blur={2.5} far={10} color="#0f172a" />
+        </Canvas>
+      </div>
 
-              <div className="animate-float-gentle absolute left-1/2 top-[16%] h-[38%] w-[38%] -translate-x-1/2 rounded-full border border-white/12 bg-[linear-gradient(180deg,#fffaf1,#d2deec_62%,#9fb1c7)] shadow-[0_28px_60px_rgba(4,12,22,0.42)]">
-                <div className="absolute inset-[12%] rounded-full border border-white/10 bg-[linear-gradient(180deg,#f5fbff,#b6d6ea_40%,#3d5b76_100%)] shadow-[inset_0_-18px_30px_rgba(12,32,51,0.24)]">
-                  <div className="absolute inset-x-[18%] top-[24%] h-[38%] rounded-[999px] bg-[linear-gradient(180deg,rgba(5,13,24,0.96),rgba(40,84,122,0.84))] shadow-[inset_0_1px_2px_rgba(255,255,255,0.12)]">
-                    <div className="absolute inset-x-[8%] top-1/2 h-px bg-[linear-gradient(90deg,transparent,rgba(124,232,255,0.66),transparent)]" />
-                    <div className="animate-scan absolute inset-x-[12%] top-0 h-[24%] rounded-full bg-[linear-gradient(180deg,rgba(124,232,255,0.5),transparent)] blur-sm" />
-                  </div>
-                </div>
-                <div className="absolute inset-x-[24%] bottom-[16%] h-3 rounded-full bg-[rgba(124,232,255,0.24)] blur-sm" />
-              </div>
-
-              <div className="animate-float-gentle absolute left-1/2 top-[52%] h-[24%] w-[28%] -translate-x-1/2 rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#f1f7ff,#cddbf0_52%,#8fa6c0)] shadow-[0_24px_50px_rgba(4,12,22,0.28)]">
-                <div className="absolute inset-x-[18%] top-[18%] h-[32%] rounded-[1rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(124,232,255,0.22))]" />
-                <div className="absolute inset-x-[24%] top-[58%] h-[18%] rounded-full bg-[rgba(7,17,32,0.14)]" />
-              </div>
-
-              <div className="absolute left-[18%] top-[56%] h-[10%] w-[20%] -rotate-[28deg] rounded-full border border-white/10 bg-[linear-gradient(180deg,#e7eff9,#9eb2ca)] shadow-[0_18px_35px_rgba(4,12,22,0.18)]" />
-              <div className="absolute right-[18%] top-[56%] h-[10%] w-[20%] rotate-[28deg] rounded-full border border-white/10 bg-[linear-gradient(180deg,#e7eff9,#9eb2ca)] shadow-[0_18px_35px_rgba(4,12,22,0.18)]" />
-              <div className="absolute left-[34%] top-[72%] h-[16%] w-[10%] rounded-full border border-white/10 bg-[linear-gradient(180deg,#dbe6f3,#8ea4bd)] shadow-[0_16px_28px_rgba(4,12,22,0.18)]" />
-              <div className="absolute right-[34%] top-[72%] h-[16%] w-[10%] rounded-full border border-white/10 bg-[linear-gradient(180deg,#dbe6f3,#8ea4bd)] shadow-[0_16px_28px_rgba(4,12,22,0.18)]" />
-
-              <div className="animate-float-delayed absolute bottom-[18%] left-[4%] rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(8,17,30,0.54)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/72 backdrop-blur-xl">
-                Friendly handoff
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div className="glass-panel shine relative overflow-hidden rounded-[1.8rem] border border-white/10 p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/48">
-                    Orbital concierge
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-white">
-                    Calm visuals, clear calls, soft motion.
-                  </p>
-                </div>
-                <div className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/68">
-                  Ready
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 sm:max-w-[12rem] sm:justify-end">
-              {signalBadges.map((badge) => (
-                <span
-                  key={badge}
-                  className="glass-panel rounded-full border border-white/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/66"
-                >
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
+      {/* Modern, light-themed overlay matching the rest of the page */}
+      <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end pointer-events-none z-10">
+        <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl p-4 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <p className="text-[10px] font-mono text-blue-600 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            Architecture
+          </p>
+          <p className="text-sm font-medium text-gray-900">Distributed Mesh</p>
+        </div>
+        
+        <div className="flex gap-2 p-2 bg-white/90 backdrop-blur-md rounded-lg border border-gray-200 shadow-sm">
+          <div className="h-2 w-2 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+          <div className="h-2 w-2 rounded-sm bg-gray-200" />
+          <div className="h-2 w-2 rounded-sm bg-gray-200" />
         </div>
       </div>
     </div>
