@@ -91,6 +91,23 @@ export function FeaturesBento() {
             animate={{ rotate: [0, 90, 180] }}
             transition={{ duration: 4, repeat: Infinity, ease: "anticipate" }}
           />
+
+          <div className="absolute left-6 top-8 w-[76%] rounded-xl border border-emerald-100 bg-white/80 p-3 backdrop-blur-md">
+            <svg viewBox="0 0 220 92" className="h-14 w-full">
+              <path d="M10 70 Q90 10 210 45" fill="none" stroke="rgba(16,185,129,0.35)" strokeWidth="2" />
+              <path d="M10 70 Q96 88 210 45" fill="none" stroke="rgba(16,185,129,0.35)" strokeWidth="2" strokeDasharray="5 4" />
+              <circle cx="10" cy="70" r="4" fill="rgba(16,185,129,0.7)" />
+              <circle cx="210" cy="45" r="4" fill="rgba(16,185,129,0.7)" />
+            </svg>
+            <motion.div
+              className="absolute left-0 top-0 h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]"
+              animate={{ x: [16, 84, 168], y: [54, 12, 30] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-500/70">
+              Smart Reroute
+            </p>
+          </div>
         </div>
       ),
     },
@@ -108,6 +125,40 @@ export function FeaturesBento() {
             animate={{ backgroundPosition: ["0px 0px", "40px 40px"] }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           />
+
+          <div className="absolute left-6 top-8 flex gap-3 rounded-xl border border-blue-100 bg-white/80 px-4 py-3 backdrop-blur-md">
+            {[0, 1, 2, 3].map((n) => (
+              <motion.div
+                key={n}
+                className="h-3 w-3 rounded-full border border-blue-300 bg-blue-50"
+                animate={{ scale: [1, 1.35, 1], opacity: [0.5, 1, 0.6] }}
+                transition={{ duration: 2.2, repeat: Infinity, delay: n * 0.2, ease: "easeInOut" }}
+              />
+            ))}
+            <div className="h-3 w-10 border-t border-dashed border-blue-300 mt-1" />
+            <motion.div
+              className="h-3 w-3 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+              animate={{ x: [0, 40, 0] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+
+          <div className="absolute right-6 top-8 w-[48%] min-w-[190px] rounded-xl border border-blue-100 bg-white/80 p-3 backdrop-blur-md">
+            <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-blue-500/70">
+              <span>Capacity</span>
+              <span>Live</span>
+            </div>
+            <div className="flex h-14 items-end gap-1.5">
+              {[24, 34, 28, 52, 40, 64, 48].map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 rounded-full bg-blue-300/80"
+                  animate={{ height: [`${Math.max(16, h - 10)}px`, `${h}px`, `${Math.max(16, h - 6)}px`] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.14, ease: "easeInOut" }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       ),
     },
