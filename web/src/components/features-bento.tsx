@@ -20,6 +20,9 @@ export function FeaturesBento() {
 
   // 3D Tilt perspective mapping directly onto the scroll curve
   const perspectiveRotateX = useTransform(scrollYProgress, [0, 0.5, 1], ["10deg", "0deg", "-10deg"]);
+  const sectionOpacity = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0.3, 1, 1, 0.3]);
+  const sectionScale = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], [0.96, 1, 1, 0.96]);
+  const sectionBlur = useTransform(scrollYProgress, [0, 0.15, 0.85, 1], ["blur(12px)", "blur(0px)", "blur(0px)", "blur(12px)"]);
 
   const cardTransforms = [cardY0, cardY1, cardY2, cardY3];
 
@@ -112,7 +115,10 @@ export function FeaturesBento() {
 
   return (
     <section ref={containerRef} className="relative w-full py-20 sm:py-28 lg:py-32 bg-gray-50 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
+      <motion.div
+        style={{ opacity: sectionOpacity, scale: sectionScale, filter: sectionBlur }}
+        className="mx-auto max-w-7xl px-6 sm:px-8 lg:px-12 origin-center"
+      >
         <motion.div 
           style={{ y: titleY }}
           className="mb-14 max-w-2xl md:mb-20 relative z-10"
@@ -164,7 +170,7 @@ export function FeaturesBento() {
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
